@@ -1,0 +1,31 @@
+CREATE OR REPLACE PROCEDURE validate_entries(input_file_id NUMBER, null_status_message OUT VARCHAR2)
+IS
+  null_total NUMBER := 0;
+  null_alpha_numeric NUMBER := 0;
+  null_number NUMBER := 0;
+  total_row_count NUMBER;
+  error_threshold NUMBER;
+BEGIN
+  SELECT COUNT(*) INTO total_row_count FROM STG_NAV WHERE FILE_ID = input_file_id;
+  error_threshold := total_row_count * 0.1;
+  
+  SELECT COUNT(*) INTO null_alpha_numeric FROM STG_NAV WHERE FILE_ID = input_file_id AND (FUND_ID IS NULL OR UPDATE_ID IS NULL);
+  SELECT COUNT(*) INTO null_number FROM STG_NAV WHERE FILE_ID = input_file_id AND (MDM_REG_ID = 0 OR NAV_VAL = 0);
+  null_total := null_alpha_numeric + null_number;
+  
+  /*Check for the error threshold, raise the warning message if the errors are below 10% of the total rows, errors if above 10%, else success*/
+  IF null_total > error_threshold THEN
+    null_status_message := 'Error Nulls: 1 or more values in Error';
+  ELSIF null_total < error_threshold AND null_total > 0 THEN
+    null_status_message := 'Warning Nulls: Null values present';
+  ELSE
+    null_status_message := 'Success';
+  END IF;  
+  
+  /*Set the validation flag to either 'N' or 'Y'*/
+  UPDATE STG_NAV SET VALIDATION_FG = 'N'
+  WHERE FILE_ID = input_file_id AND (FUND_ID IS NULL OR UPDATE_ID IS NULL OR MDM_REG_ID = 0 OR NAV_VAL = 0);
+  UPDATE STG_NAV SET VALIDATION_FG = 'Y'
+  WHERE FILE_ID = input_file_id AND (FUND_ID IS NOT NULL AND UPDATE_ID IS NOT NULL AND MDM_REG_ID != 0 AND NAV_VAL != 0);
+END;
+/

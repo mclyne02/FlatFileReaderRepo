@@ -1,0 +1,51 @@
+CREATE OR REPLACE PROCEDURE insert_entry(load_id NUMBER, file_id NUMBER , fund_id VARCHAR2, as_of_date DATE, nav_val NUMBER, mdm_reg_id NUMBER, update_id VARCHAR2)
+IS
+  entry STG_NAV%ROWTYPE;
+  existing_load_id NUMBER;
+  existing_as_of_date DATE;
+  row_count NUMBER;
+BEGIN
+  SELECT COUNT(*) INTO row_count FROM STG_NAV WHERE LOAD_ID = load_id AND TO_CHAR(AS_OF_DATE, 'DD-MON-YY') LIKE TO_CHAR(as_of_date, 'DD-MON-YY') AND FILE_ID = file_id;
+  SELECT * INTO entry FROM STG_NAV WHERE LOAD_ID = load_id AND TO_CHAR(AS_OF_DATE, 'DD-MON-YY') LIKE TO_CHAR(as_of_date, 'DD-MON-YY') AND FILE_ID = file_id;
+  /*IF entry.LOAD_ID = load_id AND entry.AS_OF_DATE = as_of_date AND FILE_ID = file_id OR row_count > 0 THEN*/
+  IF row_count > 0 THEN
+    entry.LOAD_ID := load_id;
+    entry.FILE_ID := file_id;
+    entry.FUND_ID := fund_id;
+    entry.AS_OF_DATE := as_of_date;
+    entry.NAV_VAL := nav_val;
+    entry.MDM_REG_ID := mdm_reg_id;
+    entry.UPDATE_ID := update_id;
+    entry.UPDATE_TMSTMP := CURRENT_TIMESTAMP;
+    UPDATE STG_NAV SET ROW = entry WHERE LOAD_ID = load_id AND TO_CHAR(AS_OF_DATE, 'DD-MON-YY') LIKE TO_CHAR(as_of_date, 'DD-MON-YY') AND FILE_ID = file_id;
+  ELSE
+    INSERT INTO STG_NAV(LOAD_ID, FILE_ID, FUND_ID, AS_OF_DATE, NAV_VAL, MDM_REG_ID, PROCESSED_FG, VALIDATION_FG, UPDATE_ID, UPDATE_TMSTMP) VALUES(load_id, file_id, fund_id, as_of_date, nav_val, mdm_reg_id, null, null, update_id, CURRENT_TIMESTAMP);
+  END IF;
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+      INSERT INTO STG_NAV(LOAD_ID, FILE_ID, FUND_ID, AS_OF_DATE, NAV_VAL, MDM_REG_ID, PROCESSED_FG, VALIDATION_FG, UPDATE_ID, UPDATE_TMSTMP) VALUES(load_id, file_id, fund_id, as_of_date, nav_val, mdm_reg_id, null, null, update_id, CURRENT_TIMESTAMP);
+END;
+/
+
+
+CREATE OR REPLACE PROCEDURE insert_entry(load_id NUMBER, file_id NUMBER , fund_id VARCHAR2, as_of_date DATE, nav_val NUMBER, mdm_reg_id NUMBER, update_id VARCHAR2)
+IS
+  entry STG_NAV%ROWTYPE;
+BEGIN
+  load_id_output := load_id;
+  entry := null;
+  SELECT * INTO entry FROM STG_NAV WHERE TO_CHAR(AS_OF_DATE, 'DD-MON-YY') LIKE TO_CHAR(as_of_date, 'DD-MON-YY') AND FILE_ID = file_id;
+  IF (entry.LOAD_ID = load_id AND entry.AS_OF_DATE = as_of_date) THEN
+    UPDATE STG_NAV 
+    SET LOAD_ID = load_id, FILE_ID = file_id, FUND_ID = fund_id, AS_OF_DATE = as_of_date, NAV_VAL = nav_val, MDM_REG_ID = mdm_reg_id, UPDATE_ID = update_id, UPDATE_TMSTMP = CURRENT_TIMESTAMP
+    WHERE TO_CHAR(AS_OF_DATE, 'DD-MON-YY') LIKE TO_CHAR(as_of_date, 'DD-MON-YY') AND FILE_ID = file_id;
+  ELSE
+    is_inserted := 'Inserted';
+    INSERT INTO STG_NAV(LOAD_ID, FILE_ID, FUND_ID, AS_OF_DATE, NAV_VAL, MDM_REG_ID, PROCESSED_FG, VALIDATION_FG, UPDATE_ID, UPDATE_TMSTMP) VALUES(load_id, file_id, fund_id, as_of_date, nav_val, mdm_reg_id, null, null, update_id, CURRENT_TIMESTAMP);
+  END IF;
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+      no_data_found_error := 'No data found error';
+      INSERT INTO STG_NAV(LOAD_ID, FILE_ID, FUND_ID, AS_OF_DATE, NAV_VAL, MDM_REG_ID, PROCESSED_FG, VALIDATION_FG, UPDATE_ID, UPDATE_TMSTMP) VALUES(load_id, file_id, fund_id, as_of_date, nav_val, mdm_reg_id, null, null, update_id, CURRENT_TIMESTAMP);
+END;
+/

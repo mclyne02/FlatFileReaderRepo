@@ -1,0 +1,75 @@
+CREATE OR REPLACE PROCEDURE insert_entry(load_id NUMBER, file_id NUMBER , fund_id VARCHAR2, as_of_date DATE, nav_val NUMBER, mdm_reg_id NUMBER, update_id VARCHAR2)
+IS
+  entry STG_NAV%ROWTYPE;
+  existing_load_id NUMBER;
+  existing_as_of_date DATE;
+BEGIN
+  SELECT * INTO entry FROM STG_NAV WHERE LOAD_ID = load_id AND AS_OF_DATE LIKE as_of_date AND FILE_ID = file_id;
+  DBMS_OUTPUT.PUT_LINE(entry.AS_OF_DATE);
+  DBMS_OUTPUT.PUT_LINE(as_of_date);
+  entry.LOAD_ID := load_id;
+  entry.FILE_ID := file_id;
+  entry.FUND_ID := fund_id;
+  entry.AS_OF_DATE := as_of_date;
+  entry.NAV_VAL := nav_val;
+  entry.MDM_REG_ID := mdm_reg_id;
+  entry.UPDATE_ID := update_id;
+  entry.UPDATE_TMSTMP := CURRENT_TIMESTAMP;
+  UPDATE STG_NAV SET ROW = entry WHERE LOAD_ID = load_id AND AS_OF_DATE = as_of_date AND FILE_ID = file_id;
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+      INSERT INTO STG_NAV(LOAD_ID, FILE_ID, FUND_ID, AS_OF_DATE, NAV_VAL, MDM_REG_ID, PROCESSED_FG, VALIDATION_FG, UPDATE_ID, UPDATE_TMSTMP) VALUES(load_id, file_id, fund_id, as_of_date, nav_val, mdm_reg_id, null, null, update_id, CURRENT_TIMESTAMP);
+END;
+/
+
+DECLARE
+  entry STG_NAV%ROWTYPE;
+  existing_load_id NUMBER;
+  existing_as_of_date DATE;
+  row_count NUMBER;
+BEGIN
+  SELECT * INTO entry FROM STG_NAV WHERE LOAD_ID = 2001 AND AS_OF_DATE LIKE '01-AUG-16' AND FILE_ID = 2;
+  DBMS_OUTPUT.PUT_LINE(entry.LOAD_ID); 
+  entry.LOAD_ID := 9005;
+  DBMS_OUTPUT.PUT_LINE(entry.LOAD_ID); 
+  entry.FILE_ID := 1;
+  entry.FUND_ID := 'SMP Equity Income';
+  entry.AS_OF_DATE := '01-AUG-16';
+  entry.NAV_VAL := 109.529609;
+  entry.MDM_REG_ID := 9005;
+  entry.PROCESSED_FG := 'N';
+  entry.VALIDATION_FG := null;
+  entry.UPDATE_ID := 'TGVEI';
+  entry.UPDATE_TMSTMP := CURRENT_TIMESTAMP;
+  UPDATE STG_NAV SET ROW = entry WHERE LOAD_ID = 2001 AND AS_OF_DATE LIKE '01-AUG-16' AND FILE_ID = 1;
+  EXCEPTION
+    WHEN NO_DATA_FOUND  THEN
+      INSERT INTO STG_NAV(LOAD_ID, FILE_ID, FUND_ID, AS_OF_DATE, NAV_VAL, MDM_REG_ID, PROCESSED_FG, VALIDATION_FG, UPDATE_ID, UPDATE_TMSTMP) VALUES(1111, 1, 'SMP Equity Income', '01-AUG-16', 109.529609, 9005, null, null, 'TGVEI', CURRENT_TIMESTAMP);
+      DBMS_OUTPUT.PUT_LINE('No data found'); 
+END;
+/
+
+CREATE OR REPLACE PROCEDURE insert_entry(load_id NUMBER, file_id NUMBER , fund_id VARCHAR2, as_of_date DATE, nav_val NUMBER, mdm_reg_id NUMBER, update_id VARCHAR2)
+IS
+BEGIN
+  INSERT INTO STG_NAV(LOAD_ID, FILE_ID, FUND_ID, AS_OF_DATE, NAV_VAL, MDM_REG_ID, PROCESSED_FG, VALIDATION_FG, UPDATE_ID, UPDATE_TMSTMP) VALUES(load_id, file_id, fund_id, as_of_date, nav_val, mdm_reg_id, 'N', null, update_id, CURRENT_TIMESTAMP);
+    EXCEPTION
+      WHEN DUP_VAL_ON_INDEX THEN
+        UPDATE STG_NAV 
+        SET LOAD_ID = load_id, FILE_ID = file_id, FUND_ID = fund_id, AS_OF_DATE = as_of_date, NAV_VAL = nav_val, MDM_REG_ID = mdm_reg_id, UPDATE_ID = update_id, UPDATE_TMSTMP = CURRENT_TIMESTAMP
+        WHERE LOAD_ID = load_id AND TO_CHAR(AS_OF_DATE, 'DD-MON-YY') LIKE TO_CHAR(as_of_date, 'DD-MON-YY') AND FILE_ID = file_id;
+END;
+/
+
+  /*UPDATE STG_NAV
+  SET LOAD_ID = i_load_id, FILE_ID = i_file_id, FUND_ID = i_fund_id, AS_OF_DATE = i_as_of_date, NAV_VAL = i_nav_val, MDM_REG_ID = i_mdm_reg_id, UPDATE_ID = i_update_id, UPDATE_TMSTMP = CURRENT_TIMESTAMP
+  WHERE LOAD_ID = i_load_id AND AS_OF_DATE LIKE i_as_of_date AND FILE_ID = i_file_id;*/
+  
+  
+  /*Check the variance between the days by calling FUNCTION find_variance */
+  variance_status_message := find_variance;
+  /*DBMS_OUTPUT.PUT_LINE(variance_status_message);*/  
+  
+  
+  
+  
